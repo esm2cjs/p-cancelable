@@ -30,7 +30,7 @@ PJSON=$(cat package.json | jq --tab '
 	| .typesVersions["*"]["cjs/index.d.ts"] = ["esm/index.d.ts"]
 	| .typesVersions["*"]["*"] = ["esm/*"]
 	| .scripts["to-cjs"] = "esm2cjs --in esm --out cjs -t node12"
-	| .xo = {ignores: ["cjs", "*.test-d.ts"]}
+	| .xo = {ignores: ["cjs", "*.test-d.ts", "**/*.d.ts"]}
 ')
 echo "$PJSON" > package.json
 
