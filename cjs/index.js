@@ -33,13 +33,17 @@ var __privateSet = (obj, member, value, setter) => {
   setter ? setter.call(obj, value) : member.set(obj, value);
   return value;
 };
+var __privateMethod = (obj, member, method) => {
+  __accessCheck(obj, member, "access private method");
+  return method;
+};
 var esm_exports = {};
 __export(esm_exports, {
   CancelError: () => CancelError,
   default: () => PCancelable
 });
 module.exports = __toCommonJS(esm_exports);
-var _cancelHandlers, _rejectOnCancel, _state, _promise, _reject;
+var _cancelHandlers, _rejectOnCancel, _state, _promise, _reject, _setState, setState_fn;
 class CancelError extends Error {
   constructor(reason) {
     super(reason || "Promise was canceled");
@@ -57,6 +61,7 @@ const promiseState = Object.freeze({
 });
 const _PCancelable = class {
   constructor(executor) {
+    __privateAdd(this, _setState);
     __privateAdd(this, _cancelHandlers, []);
     __privateAdd(this, _rejectOnCancel, true);
     __privateAdd(this, _state, promiseState.pending);
@@ -67,13 +72,13 @@ const _PCancelable = class {
       const onResolve = (value) => {
         if (__privateGet(this, _state) !== promiseState.canceled || !onCancel.shouldReject) {
           resolve(value);
-          __privateSet(this, _state, promiseState.resolved);
+          __privateMethod(this, _setState, setState_fn).call(this, promiseState.resolved);
         }
       };
       const onReject = (error) => {
         if (__privateGet(this, _state) !== promiseState.canceled || !onCancel.shouldReject) {
           reject(error);
-          __privateSet(this, _state, promiseState.rejected);
+          __privateMethod(this, _setState, setState_fn).call(this, promiseState.rejected);
         }
       };
       const onCancel = (handler) => {
@@ -112,7 +117,7 @@ const _PCancelable = class {
     if (__privateGet(this, _state) !== promiseState.pending) {
       return;
     }
-    __privateSet(this, _state, promiseState.canceled);
+    __privateMethod(this, _setState, setState_fn).call(this, promiseState.canceled);
     if (__privateGet(this, _cancelHandlers).length > 0) {
       try {
         for (const handler of __privateGet(this, _cancelHandlers)) {
@@ -137,6 +142,12 @@ _rejectOnCancel = new WeakMap();
 _state = new WeakMap();
 _promise = new WeakMap();
 _reject = new WeakMap();
+_setState = new WeakSet();
+setState_fn = function(state) {
+  if (__privateGet(this, _state) === promiseState.pending) {
+    __privateSet(this, _state, state);
+  }
+};
 Object.setPrototypeOf(PCancelable.prototype, Promise.prototype);
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

@@ -1,6 +1,6 @@
 {
 	"name": "@esm2cjs/p-cancelable",
-	"version": "4.0.0",
+	"version": "4.0.1",
 	"description": "Create a promise that can be canceled. This is a fork of sindresorhus/p-cancelable, but with CommonJS support.",
 	"license": "MIT",
 	"repository": "esm2cjs/p-cancelable",
