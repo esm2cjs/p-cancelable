@@ -12,7 +12,7 @@ const cancelablePromise: PCancelable<number> = new PCancelable(
 		expectType<OnCancelFunction>(onCancel);
 		onCancel(() => 'foo');
 		onCancel.shouldReject = false;
-	}
+	},
 );
 
 cancelablePromise.cancel();
@@ -22,21 +22,20 @@ expectType<boolean>(cancelablePromise.isCanceled);
 const function0 = PCancelable.fn(async onCancel => {
 	expectType<OnCancelFunction>(onCancel);
 
-	return Promise.resolve(10);
+	return 10;
 });
 expectType<() => PCancelable<number>>(function0);
 
 const function1 = PCancelable.fn(
-	async (_parameter1: string, _onCancel: OnCancelFunction) => Promise.resolve(10)
+	async (_parameter1: string, _onCancel: OnCancelFunction) => 10,
 );
 expectType<(parameter1: string) => PCancelable<number>>(function1);
 
 const function2 = PCancelable.fn(
-	async (_parameter1: string, _parameter2: boolean, _onCancel: OnCancelFunction) =>
-		Promise.resolve(10)
+	async (_parameter1: string, _parameter2: boolean, _onCancel: OnCancelFunction) => 10,
 );
 expectType<(_parameter1: string, _parameter2: boolean) => PCancelable<number>>(
-	function2
+	function2,
 );
 
 const function3 = PCancelable.fn(
@@ -44,10 +43,8 @@ const function3 = PCancelable.fn(
 		_parameter1: string,
 		_parameter2: boolean,
 		_parameter3: number,
-		_onCancel: OnCancelFunction
-	) => {
-		return Promise.resolve(10);
-	}
+		_onCancel: OnCancelFunction,
+	) => 10,
 );
 expectType<
 (
@@ -63,10 +60,8 @@ const function4 = PCancelable.fn(
 		_parameter2: boolean,
 		_parameter3: number,
 		_parameter4: symbol,
-		_onCancel: OnCancelFunction
-	) => {
-		return Promise.resolve(10);
-	}
+		_onCancel: OnCancelFunction,
+	) => 10,
 );
 expectType<
 (
@@ -83,11 +78,9 @@ const function5 = PCancelable.fn(
 		_parameter2: boolean,
 		_parameter3: number,
 		_parameter4: symbol,
-		_parameter5: null,
-		_onCancel: OnCancelFunction
-	) => {
-		return Promise.resolve(10);
-	}
+		_parameter5: null, // eslint-disable-line @typescript-eslint/ban-types
+		_onCancel: OnCancelFunction,
+	) => 10,
 );
 expectType<
 (
@@ -95,7 +88,7 @@ parameter1: string,
 parameter2: boolean,
 parameter3: number,
 parameter4: symbol,
-parameter5: null
+parameter5: null // eslint-disable-line @typescript-eslint/ban-types
 ) => PCancelable<number>
 >(function5);
 

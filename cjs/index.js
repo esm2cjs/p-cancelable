@@ -15,12 +15,31 @@ var __copyProps = (to, from, except, desc) => {
   return to;
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __accessCheck = (obj, member, msg) => {
+  if (!member.has(obj))
+    throw TypeError("Cannot " + msg);
+};
+var __privateGet = (obj, member, getter) => {
+  __accessCheck(obj, member, "read from private field");
+  return getter ? getter.call(obj) : member.get(obj);
+};
+var __privateAdd = (obj, member, value) => {
+  if (member.has(obj))
+    throw TypeError("Cannot add the same private member more than once");
+  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+};
+var __privateSet = (obj, member, value, setter) => {
+  __accessCheck(obj, member, "write to private field");
+  setter ? setter.call(obj, value) : member.set(obj, value);
+  return value;
+};
 var esm_exports = {};
 __export(esm_exports, {
   CancelError: () => CancelError,
   default: () => PCancelable
 });
 module.exports = __toCommonJS(esm_exports);
+var _cancelHandlers, _rejectOnCancel, _state, _promise, _reject;
 class CancelError extends Error {
   constructor(reason) {
     super(reason || "Promise was canceled");
@@ -30,81 +49,94 @@ class CancelError extends Error {
     return true;
   }
 }
-class PCancelable {
-  static fn(userFunction) {
-    return (...arguments_) => {
-      return new PCancelable((resolve, reject, onCancel) => {
-        arguments_.push(onCancel);
-        userFunction(...arguments_).then(resolve, reject);
-      });
-    };
-  }
+const promiseState = Object.freeze({
+  pending: Symbol("pending"),
+  canceled: Symbol("canceled"),
+  resolved: Symbol("resolved"),
+  rejected: Symbol("rejected")
+});
+const _PCancelable = class {
   constructor(executor) {
-    this._cancelHandlers = [];
-    this._isPending = true;
-    this._isCanceled = false;
-    this._rejectOnCancel = true;
-    this._promise = new Promise((resolve, reject) => {
-      this._reject = reject;
+    __privateAdd(this, _cancelHandlers, []);
+    __privateAdd(this, _rejectOnCancel, true);
+    __privateAdd(this, _state, promiseState.pending);
+    __privateAdd(this, _promise, void 0);
+    __privateAdd(this, _reject, void 0);
+    __privateSet(this, _promise, new Promise((resolve, reject) => {
+      __privateSet(this, _reject, reject);
       const onResolve = (value) => {
-        if (!this._isCanceled || !onCancel.shouldReject) {
-          this._isPending = false;
+        if (__privateGet(this, _state) !== promiseState.canceled || !onCancel.shouldReject) {
           resolve(value);
+          __privateSet(this, _state, promiseState.resolved);
         }
       };
       const onReject = (error) => {
-        this._isPending = false;
-        reject(error);
+        if (__privateGet(this, _state) !== promiseState.canceled || !onCancel.shouldReject) {
+          reject(error);
+          __privateSet(this, _state, promiseState.rejected);
+        }
       };
       const onCancel = (handler) => {
-        if (!this._isPending) {
-          throw new Error("The `onCancel` handler was attached after the promise settled.");
+        if (__privateGet(this, _state) !== promiseState.pending) {
+          throw new Error(`The \`onCancel\` handler was attached after the promise ${__privateGet(this, _state).description}.`);
         }
-        this._cancelHandlers.push(handler);
+        __privateGet(this, _cancelHandlers).push(handler);
       };
       Object.defineProperties(onCancel, {
         shouldReject: {
-          get: () => this._rejectOnCancel,
+          get: () => __privateGet(this, _rejectOnCancel),
           set: (boolean) => {
-            this._rejectOnCancel = boolean;
+            __privateSet(this, _rejectOnCancel, boolean);
           }
         }
       });
       executor(onResolve, onReject, onCancel);
+    }));
+  }
+  static fn(userFunction) {
+    return (...arguments_) => new _PCancelable((resolve, reject, onCancel) => {
+      arguments_.push(onCancel);
+      userFunction(...arguments_).then(resolve, reject);
     });
   }
   then(onFulfilled, onRejected) {
-    return this._promise.then(onFulfilled, onRejected);
+    return __privateGet(this, _promise).then(onFulfilled, onRejected);
   }
   catch(onRejected) {
-    return this._promise.catch(onRejected);
+    return __privateGet(this, _promise).catch(onRejected);
   }
   finally(onFinally) {
-    return this._promise.finally(onFinally);
+    return __privateGet(this, _promise).finally(onFinally);
   }
   cancel(reason) {
-    if (!this._isPending || this._isCanceled) {
+    if (__privateGet(this, _state) !== promiseState.pending) {
       return;
     }
-    this._isCanceled = true;
-    if (this._cancelHandlers.length > 0) {
+    __privateSet(this, _state, promiseState.canceled);
+    if (__privateGet(this, _cancelHandlers).length > 0) {
       try {
-        for (const handler of this._cancelHandlers) {
+        for (const handler of __privateGet(this, _cancelHandlers)) {
           handler();
         }
       } catch (error) {
-        this._reject(error);
+        __privateGet(this, _reject).call(this, error);
         return;
       }
     }
-    if (this._rejectOnCancel) {
-      this._reject(new CancelError(reason));
+    if (__privateGet(this, _rejectOnCancel)) {
+      __privateGet(this, _reject).call(this, new CancelError(reason));
     }
   }
   get isCanceled() {
-    return this._isCanceled;
+    return __privateGet(this, _state) === promiseState.canceled;
   }
-}
+};
+let PCancelable = _PCancelable;
+_cancelHandlers = new WeakMap();
+_rejectOnCancel = new WeakMap();
+_state = new WeakMap();
+_promise = new WeakMap();
+_reject = new WeakMap();
 Object.setPrototypeOf(PCancelable.prototype, Promise.prototype);
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
